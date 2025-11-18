@@ -1,11 +1,11 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
+import mongoose from 'mongoose';
+import { Tenant } from '@/modules/tenants/tenant.model';
 import { UnauthorizedError } from './error_handler';
 
 /**
  * Tenant resolution middleware
  * Resolves tenant from X-Prep-Api-Key header and enforces isolation
- *
- * Will be fully implemented in Phase 5
  */
 
 // Extended request type with tenant context
@@ -15,6 +15,7 @@ export interface TenantRequest extends FastifyRequest {
     name: string;
     type: string;
   };
+  tenant_id?: mongoose.Types.ObjectId; // For easy access in services
 }
 
 /**
@@ -24,20 +25,27 @@ export async function resolveTenant(
   request: FastifyRequest,
   reply: FastifyReply
 ): Promise<void> {
+  const tenantRequest = request as TenantRequest;
   const apiKey = request.headers['x-prep-api-key'];
 
   if (!apiKey || typeof apiKey !== 'string') {
     throw new UnauthorizedError('Missing or invalid API key');
   }
 
-  // TODO: Implement in Phase 5
-  // 1. Hash the API key
-  // 2. Look up tenant by hashed API key
-  // 3. Attach tenant to request
-  // 4. Update api_key.last_used_at
+  // Look up tenant by API key
+  const tenant = await Tenant.findByApiKey(apiKey);
 
-  // For now, this is a placeholder
-  throw new UnauthorizedError('Tenant resolution not yet implemented');
+  if (!tenant) {
+    throw new UnauthorizedError('Invalid API key');
+  }
+
+  // Attach tenant to request
+  tenantRequest.tenant = {
+    id: tenant._id.toString(),
+    name: tenant.name,
+    type: tenant.type,
+  };
+  tenantRequest.tenant_id = tenant._id;
 }
 
 /**

@@ -146,10 +146,18 @@ async function registerRoutes(app: FastifyInstance): Promise<void> {
     });
   });
 
-  // Future route registrations will go here:
-  // await app.register(authRoutes, { prefix: '/api/v1/auth' });
-  // await app.register(vendorRoutes, { prefix: '/api/v1/vendors' });
-  // etc.
+  // Register API routes
+  const { authRoutes } = await import('@/modules/auth/auth.routes');
+  const { vendorRoutes } = await import('@/modules/vendors/vendor.routes');
+  const { verificationRoutes } = await import('@/modules/verification/verification.routes');
+  const { regintelRoutes } = await import('@/modules/regintel/regintel.routes');
+  const { webhookRoutes } = await import('@/modules/webhooks/webhook.routes');
+
+  await app.register(authRoutes, { prefix: '/api/v1/auth' });
+  await app.register(vendorRoutes, { prefix: '/api/v1/vendors' });
+  await app.register(verificationRoutes, { prefix: '/api/v1' });
+  await app.register(regintelRoutes, { prefix: '/api/v1' });
+  await app.register(webhookRoutes, { prefix: '/api/v1/webhooks' });
 
   logger.info('Application routes registered');
 }

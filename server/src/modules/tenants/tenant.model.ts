@@ -116,7 +116,7 @@ const TenantSchema = new Schema<ITenant, ITenantModel>(
       lowercase: true,
       trim: true,
       validate: {
-        validator: (v: string) => /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/.test(v),
+        validator: (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
         message: 'Invalid email format',
       },
     },
@@ -211,11 +211,13 @@ TenantSchema.statics.findByApiKey = async function (
     return null;
   }
 
-  // Update last_used_at for this API key
+  // Update last_used_at for this API key using atomic operation to prevent race conditions
   const apiKeyIndex = tenant.api_keys.findIndex((k) => k.key_hash === keyHash);
-  if (apiKeyIndex !== -1) {
-    tenant.api_keys[apiKeyIndex]!.last_used_at = new Date();
-    await tenant.save();
+  if (apiKeyIndex >= 0) {
+    await this.updateOne(
+      { _id: tenant._id, 'api_keys.key_hash': keyHash },
+      { $set: { 'api_keys.$.last_used_at': new Date() } }
+    );
   }
 
   return tenant;

@@ -48,7 +48,7 @@ const envSchema = z.object({
   S3_SECRET_ACCESS_KEY: z.string().optional(),
 
   // Webhook
-  WEBHOOK_SIGNING_SECRET: z.string().min(32).default('dev-webhook-secret-change-in-production-min-32-chars'),
+  WEBHOOK_SIGNING_SECRET: z.string().min(32), // No default - must be explicitly set
   WEBHOOK_TIMEOUT_MS: z.string().transform(Number).pipe(z.number().int().positive()).default('5000'),
   WEBHOOK_MAX_RETRIES: z.string().transform(Number).pipe(z.number().int().min(0)).default('3'),
 

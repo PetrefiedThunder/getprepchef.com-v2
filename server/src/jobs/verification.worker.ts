@@ -98,7 +98,14 @@ export function startVerificationWorker(): void {
   // Graceful shutdown
   process.on('SIGTERM', async () => {
     logger.info('SIGTERM received, closing verification worker...');
-    await worker.close();
+    try {
+      await worker.close();
+    } catch (err) {
+      logger.error({
+        msg: 'Error closing verification worker',
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
   });
 }
 

@@ -89,6 +89,11 @@ export class VerificationService {
         throw new NotFoundError('Vendor');
       }
 
+      // Validate kitchen is populated and not just an ObjectId
+      if (!vendor.kitchen_id || typeof vendor.kitchen_id === 'string') {
+        throw new Error('Kitchen not populated - database integrity issue');
+      }
+
       const kitchen = vendor.kitchen_id as any;
 
       // Get vendor documents

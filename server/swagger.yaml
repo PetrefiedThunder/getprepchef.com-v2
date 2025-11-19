@@ -1,0 +1,1054 @@
+openapi: 3.0.3
+info:
+  title: PrepChef API
+  description: |
+    Vendor Verification as a Service for Shared Kitchens
+
+    PrepChef automates vendor compliance tracking for commercial and shared kitchen operators.
+    Our core wedge is continuous, jurisdiction-aware verification that keeps food entrepreneurs
+    compliant across multiple regulatory authorities.
+
+    ## Authentication
+
+    The API uses two authentication methods:
+    - **JWT Tokens**: For user authentication (access token in Authorization header)
+    - **API Keys**: For tenant resolution (X-Prep-Api-Key header)
+
+    ## Rate Limiting
+
+    All endpoints are rate-limited to prevent abuse:
+    - Authentication endpoints: 5 requests per 15 minutes
+    - Other endpoints: 100 requests per 15 minutes (configurable per tenant)
+  version: 1.0.0
+  contact:
+    name: PrepChef Support
+    email: team@prepchef.com
+  license:
+    name: Proprietary
+
+servers:
+  - url: http://localhost:3000
+    description: Local development
+  - url: https://api.prepchef.com
+    description: Production
+
+tags:
+  - name: Authentication
+    description: User authentication and session management
+  - name: Vendors
+    description: Vendor management operations
+  - name: Verification
+    description: Compliance verification and history
+  - name: Regulatory Intelligence
+    description: Jurisdiction and requirement information
+  - name: Webhooks
+    description: Webhook endpoint management
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT access token obtained from login/register
+
+    apiKey:
+      type: apiKey
+      in: header
+      name: X-Prep-Api-Key
+      description: Tenant API key for multi-tenant isolation
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Error message
+        code:
+          type: string
+          description: Error code
+        details:
+          type: object
+          description: Additional error details
+      required:
+        - message
+
+    User:
+      type: object
+      properties:
+        _id:
+          type: string
+        tenant_id:
+          type: string
+        email:
+          type: string
+          format: email
+        first_name:
+          type: string
+        last_name:
+          type: string
+        role:
+          type: string
+          enum: [admin, tenant_owner, tenant_staff]
+        status:
+          type: string
+          enum: [active, suspended]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Tenant:
+      type: object
+      properties:
+        _id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+          enum: [kitchen_operator, enterprise, partner]
+        contact_email:
+          type: string
+          format: email
+        status:
+          type: string
+          enum: [active, suspended]
+        settings:
+          type: object
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Address:
+      type: object
+      properties:
+        street:
+          type: string
+        city:
+          type: string
+        county:
+          type: string
+        state:
+          type: string
+        zip:
+          type: string
+        country:
+          type: string
+      required:
+        - street
+        - city
+        - state
+        - zip
+        - country
+
+    VendorContact:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        primary_contact_name:
+          type: string
+      required:
+        - email
+        - phone
+        - primary_contact_name
+
+    Vendor:
+      type: object
+      properties:
+        _id:
+          type: string
+        tenant_id:
+          type: string
+        kitchen_id:
+          type: string
+        business_name:
+          type: string
+        dba_name:
+          type: string
+        legal_entity_type:
+          type: string
+          enum: [sole_proprietorship, llc, corporation, partnership, nonprofit]
+        business_address:
+          $ref: '#/components/schemas/Address'
+        contact:
+          $ref: '#/components/schemas/VendorContact'
+        status:
+          type: string
+          enum: [pending, verified, needs_review, rejected, expired, suspended]
+        last_verified_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    VerificationRun:
+      type: object
+      properties:
+        _id:
+          type: string
+        vendor_id:
+          type: string
+        status:
+          type: string
+          enum: [pending, in_progress, completed, failed]
+        outcome:
+          type: string
+          enum: [verified, needs_review, rejected, expired]
+        checklist:
+          type: object
+          properties:
+            items:
+              type: array
+              items:
+                type: object
+                properties:
+                  requirement_id:
+                    type: string
+                  requirement_name:
+                    type: string
+                  requirement_type:
+                    type: string
+                  status:
+                    type: string
+                    enum: [satisfied, not_satisfied, pending]
+            total_items:
+              type: integer
+            satisfied_items:
+              type: integer
+            completion_percentage:
+              type: number
+        validation_errors:
+          type: array
+          items:
+            type: string
+        started_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+
+    Jurisdiction:
+      type: object
+      properties:
+        _id:
+          type: string
+        type:
+          type: string
+          enum: [country, state, county, city]
+        name:
+          type: string
+        code:
+          type: string
+        parent_id:
+          type: string
+        metadata:
+          type: object
+          properties:
+            population:
+              type: integer
+            timezone:
+              type: string
+            regulatory_complexity_score:
+              type: integer
+              minimum: 1
+              maximum: 10
+            coverage_status:
+              type: string
+              enum: [full, partial, none]
+        created_at:
+          type: string
+          format: date-time
+
+    RegRequirement:
+      type: object
+      properties:
+        _id:
+          type: string
+        jurisdiction_id:
+          type: string
+        requirement_type:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        applies_to:
+          type: object
+          properties:
+            kitchen_types:
+              type: array
+              items:
+                type: string
+                enum: [shared, ghost, commissary]
+            entity_types:
+              type: array
+              items:
+                type: string
+                enum: [sole_proprietorship, llc, corporation, partnership, nonprofit]
+        frequency:
+          type: string
+          enum: [once, annual, biannual, as_needed]
+        priority:
+          type: integer
+        version:
+          type: string
+        effective_from:
+          type: string
+          format: date-time
+        effective_to:
+          type: string
+          format: date-time
+
+    WebhookEndpoint:
+      type: object
+      properties:
+        _id:
+          type: string
+        tenant_id:
+          type: string
+        url:
+          type: string
+          format: uri
+        events:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum: [active, paused, disabled]
+        failure_count:
+          type: integer
+        last_delivery_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+
+paths:
+  # Authentication Endpoints
+  /api/v1/auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register new tenant and user
+      description: Creates a new tenant organization and owner user account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tenant_name:
+                  type: string
+                tenant_type:
+                  type: string
+                  enum: [kitchen_operator, enterprise, partner]
+                contact_email:
+                  type: string
+                  format: email
+                first_name:
+                  type: string
+                last_name:
+                  type: string
+                password:
+                  type: string
+                  minLength: 8
+              required:
+                - tenant_name
+                - tenant_type
+                - contact_email
+                - first_name
+                - last_name
+                - password
+      responses:
+        '201':
+          description: Registration successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+                  tenant:
+                    $ref: '#/components/schemas/Tenant'
+                  access_token:
+                    type: string
+                  refresh_token:
+                    type: string
+                  api_key:
+                    type: string
+                    description: API key (shown only once)
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Email already in use
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Login user
+      description: Authenticate with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+              required:
+                - email
+                - password
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+                  access_token:
+                    type: string
+                    description: JWT access token (1 hour expiry)
+                  refresh_token:
+                    type: string
+                    description: JWT refresh token (7 days expiry)
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh access token
+      description: Get new access token using refresh token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh_token:
+                  type: string
+              required:
+                - refresh_token
+      responses:
+        '200':
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+        '401':
+          description: Invalid refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/auth/me:
+    get:
+      tags:
+        - Authentication
+      summary: Get current user
+      description: Returns authenticated user information
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # Vendor Endpoints
+  /api/v1/vendors:
+    get:
+      tags:
+        - Vendors
+      summary: List vendors
+      description: Get paginated list of vendors with optional filters
+      security:
+        - apiKey: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, verified, needs_review, rejected, expired, suspended]
+        - name: kitchen_id
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Vendors list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  vendors:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Vendor'
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+                  limit:
+                    type: integer
+                  total_pages:
+                    type: integer
+        '401':
+          description: Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      tags:
+        - Vendors
+      summary: Create vendor
+      description: Add new vendor to a kitchen
+      security:
+        - apiKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                kitchen_id:
+                  type: string
+                business_name:
+                  type: string
+                dba_name:
+                  type: string
+                legal_entity_type:
+                  type: string
+                  enum: [sole_proprietorship, llc, corporation, partnership, nonprofit]
+                business_address:
+                  $ref: '#/components/schemas/Address'
+                contact:
+                  $ref: '#/components/schemas/VendorContact'
+              required:
+                - kitchen_id
+                - business_name
+                - legal_entity_type
+                - business_address
+                - contact
+      responses:
+        '201':
+          description: Vendor created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  vendor:
+                    $ref: '#/components/schemas/Vendor'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/vendors/{id}:
+    get:
+      tags:
+        - Vendors
+      summary: Get vendor
+      description: Retrieve vendor details with persons and documents
+      security:
+        - apiKey: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Vendor details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  vendor:
+                    $ref: '#/components/schemas/Vendor'
+                  persons:
+                    type: array
+                    items:
+                      type: object
+                  documents:
+                    type: array
+                    items:
+                      type: object
+        '404':
+          description: Vendor not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    patch:
+      tags:
+        - Vendors
+      summary: Update vendor
+      description: Update vendor information
+      security:
+        - apiKey: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                dba_name:
+                  type: string
+                business_address:
+                  $ref: '#/components/schemas/Address'
+                contact:
+                  $ref: '#/components/schemas/VendorContact'
+      responses:
+        '200':
+          description: Vendor updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  vendor:
+                    $ref: '#/components/schemas/Vendor'
+
+  /api/v1/vendors/{id}/verify:
+    post:
+      tags:
+        - Vendors
+      summary: Trigger verification
+      description: Start automated compliance verification for vendor
+      security:
+        - apiKey: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Verification started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  verification_run:
+                    $ref: '#/components/schemas/VerificationRun'
+
+  # Verification Endpoints
+  /api/v1/vendors/{vendorId}/verification-runs:
+    get:
+      tags:
+        - Verification
+      summary: Get verification history
+      description: Retrieve verification runs for vendor
+      security:
+        - apiKey: []
+      parameters:
+        - name: vendorId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Verification history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  runs:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/VerificationRun'
+
+  /api/v1/verification-stats:
+    get:
+      tags:
+        - Verification
+      summary: Get verification statistics
+      description: Aggregated vendor counts by status
+      security:
+        - apiKey: []
+      responses:
+        '200':
+          description: Verification statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  stats:
+                    type: object
+                    properties:
+                      total_vendors:
+                        type: integer
+                      verified:
+                        type: integer
+                      pending:
+                        type: integer
+                      needs_review:
+                        type: integer
+                      expired:
+                        type: integer
+                      rejected:
+                        type: integer
+                      suspended:
+                        type: integer
+
+  # Regulatory Intelligence Endpoints
+  /api/v1/checklists:
+    get:
+      tags:
+        - Regulatory Intelligence
+      summary: Get compliance checklist
+      description: Retrieve applicable requirements for jurisdiction and business type
+      security:
+        - apiKey: []
+      parameters:
+        - name: jurisdiction_id
+          in: query
+          schema:
+            type: string
+        - name: state
+          in: query
+          schema:
+            type: string
+        - name: county
+          in: query
+          schema:
+            type: string
+        - name: kitchen_type
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [shared, ghost, commissary]
+        - name: entity_type
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [sole_proprietorship, llc, corporation, partnership, nonprofit]
+      responses:
+        '200':
+          description: Compliance checklist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jurisdiction:
+                    $ref: '#/components/schemas/Jurisdiction'
+                  hierarchy:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Jurisdiction'
+                  requirements:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RegRequirement'
+
+  /api/v1/jurisdictions:
+    get:
+      tags:
+        - Regulatory Intelligence
+      summary: List jurisdictions
+      description: Get jurisdictions with optional filters
+      security:
+        - apiKey: []
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [country, state, county, city]
+        - name: coverage_status
+          in: query
+          schema:
+            type: string
+            enum: [full, partial, none]
+      responses:
+        '200':
+          description: Jurisdictions list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jurisdictions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Jurisdiction'
+
+  # Webhook Endpoints
+  /api/v1/webhooks:
+    get:
+      tags:
+        - Webhooks
+      summary: List webhook endpoints
+      description: Get all webhook endpoints for tenant
+      security:
+        - apiKey: []
+      responses:
+        '200':
+          description: Webhooks list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  webhooks:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/WebhookEndpoint'
+
+    post:
+      tags:
+        - Webhooks
+      summary: Create webhook endpoint
+      description: Subscribe to webhook events
+      security:
+        - apiKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                url:
+                  type: string
+                  format: uri
+                events:
+                  type: array
+                  items:
+                    type: string
+                  example: ["vendor.verified", "vendor.expired", "regulation.updated"]
+                headers:
+                  type: object
+              required:
+                - url
+                - events
+      responses:
+        '201':
+          description: Webhook created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  webhook:
+                    $ref: '#/components/schemas/WebhookEndpoint'
+                  secret:
+                    type: string
+                    description: Webhook secret for HMAC signature verification (shown only once)
+
+  /api/v1/webhooks/{id}:
+    get:
+      tags:
+        - Webhooks
+      summary: Get webhook endpoint
+      description: Retrieve webhook details
+      security:
+        - apiKey: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Webhook details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  webhook:
+                    $ref: '#/components/schemas/WebhookEndpoint'
+
+    patch:
+      tags:
+        - Webhooks
+      summary: Update webhook endpoint
+      description: Modify webhook configuration
+      security:
+        - apiKey: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                url:
+                  type: string
+                  format: uri
+                events:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Webhook updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  webhook:
+                    $ref: '#/components/schemas/WebhookEndpoint'
+
+    delete:
+      tags:
+        - Webhooks
+      summary: Delete webhook endpoint
+      description: Remove webhook subscription
+      security:
+        - apiKey: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Webhook deleted
+
+  /api/v1/webhooks/{id}/pause:
+    post:
+      tags:
+        - Webhooks
+      summary: Pause webhook
+      description: Temporarily disable webhook deliveries
+      security:
+        - apiKey: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Webhook paused
+
+  /api/v1/webhooks/{id}/resume:
+    post:
+      tags:
+        - Webhooks
+      summary: Resume webhook
+      description: Re-enable webhook deliveries
+      security:
+        - apiKey: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Webhook resumed

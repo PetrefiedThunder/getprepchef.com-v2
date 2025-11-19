@@ -17,8 +17,9 @@
     "lint:fix": "eslint src --ext .ts --fix",
     "typecheck": "tsc --noEmit",
     "seed:regulations": "tsx src/db/seed/seed_regulations.ts",
+    "seed:expanded": "tsx src/db/seed/seed_expanded_jurisdictions.ts",
     "seed:demo": "tsx src/db/seed/seed_demo_data.ts",
-    "seed:all": "npm run seed:regulations && npm run seed:demo",
+    "seed:all": "npm run seed:regulations && npm run seed:expanded && npm run seed:demo",
     "db:reset": "tsx src/db/seed/reset_db.ts"
   },
   "keywords": [
@@ -46,13 +47,18 @@
     "dotenv": "^16.4.1",
     "bcrypt": "^5.1.1",
     "axios": "^1.6.7",
-    "jsonwebtoken": "^9.0.2"
+    "jsonwebtoken": "^9.0.2",
+    "@aws-sdk/client-s3": "^3.515.0",
+    "@aws-sdk/s3-request-presigner": "^3.515.0",
+    "@sendgrid/mail": "^8.1.0",
+    "twilio": "^4.21.0"
   },
   "devDependencies": {
     "@types/node": "^20.11.17",
     "@types/jsonwebtoken": "^9.0.5",
     "@types/bcrypt": "^5.0.2",
     "@types/jest": "^29.5.12",
+    "@types/sendgrid__mail": "^7.4.8",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
     "eslint": "^8.56.0",

@@ -111,12 +111,18 @@ This is a **fully functional MVP** with:
 - Dashboard with real-time metrics
 - Search and filtering UI
 
-**What's Next (Post-MVP):**
-- Document upload and file storage (S3)
-- Email/SMS notifications
+**Recent Enhancements:**
+- ✅ Document upload and file storage (S3 with presigned URLs)
+- ✅ Email/SMS notifications (SendGrid + Twilio)
+- ✅ Performance benchmarking and testing
+- ✅ Comprehensive security documentation
+- ✅ Expanded jurisdiction coverage (NY, TX)
+
+**What's Next:**
 - Advanced analytics and reporting
 - External regulatory API integrations
 - Mobile application
+- Marketplace features
 
 ## ✨ Key Features
 
@@ -149,6 +155,19 @@ This is a **fully functional MVP** with:
 - Automated verification runs with rules engine
 - Webhook dispatch workers
 - Regulatory clearinghouse updates
+
+### 📁 Document Storage
+- Secure S3 integration for vendor documents
+- Presigned URLs for time-limited downloads
+- File integrity verification with SHA-256 hashing
+- Support for PDF, images, and Office documents
+- Automatic encryption at rest (AES256)
+
+### 📧 Notifications
+- Email notifications via SendGrid (verification results, document expiration)
+- SMS alerts via Twilio (urgent compliance issues)
+- Customizable HTML email templates
+- Smart notification routing (email for info, SMS for urgent)
 
 ### 📊 Dashboard & Analytics
 - Real-time metrics (total vendors, verified, pending, expired)
@@ -215,6 +234,32 @@ WEBHOOK_MAX_RETRIES=3
 WEBHOOK_RETRY_DELAY_MS=2000
 ```
 
+**Optional: AWS S3 Document Storage**
+
+```env
+# S3 Configuration (for document uploads)
+S3_BUCKET_NAME=prepchef-vendor-docs
+AWS_REGION=us-east-1
+AWS_ACCESS_KEY_ID=your-aws-access-key-id
+AWS_SECRET_ACCESS_KEY=your-aws-secret-access-key
+```
+
+**Optional: Email/SMS Notifications**
+
+```env
+# SendGrid (email)
+SENDGRID_API_KEY=your-sendgrid-api-key
+SENDGRID_FROM_EMAIL=notifications@prepchef.com
+
+# Twilio (SMS)
+TWILIO_ACCOUNT_SID=your-twilio-account-sid
+TWILIO_AUTH_TOKEN=your-twilio-auth-token
+TWILIO_PHONE_NUMBER=+15555555555
+
+# Frontend URL (for email links)
+FRONTEND_URL=http://localhost:5173
+```
+
 ### 3. Start Infrastructure with Docker Compose
 
 ```bash
@@ -233,10 +278,13 @@ cd server
 # Seed regulatory data (jurisdictions, requirements, health depts)
 npm run seed:regulations
 
+# Seed expanded jurisdictions (NY, TX coverage)
+npm run seed:expanded
+
 # Seed demo data (tenant, users, kitchens, vendors)
 npm run seed:demo
 
-# Or run both
+# Or run all at once
 npm run seed:all
 ```
 

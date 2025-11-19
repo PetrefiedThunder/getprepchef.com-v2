@@ -64,7 +64,7 @@ export class VendorService {
 
     // Verify kitchen exists and belongs to tenant
     const kitchen = await Kitchen.findById(input.kitchen_id);
-    if (!kitchen) {
+    if (!kitchen || !kitchen.tenant_id) {
       throw new NotFoundError('Kitchen');
     }
 
@@ -76,7 +76,7 @@ export class VendorService {
     const existingVendor = await Vendor.findOne({
       tenant_id: input.tenant_id,
       kitchen_id: input.kitchen_id,
-      business_name: input.business_name,
+      business_name: { $eq: input.business_name }, // Prevent NoSQL injection
     });
 
     if (existingVendor) {
@@ -133,6 +133,10 @@ export class VendorService {
     }
 
     if (filters?.kitchen_id) {
+      // Validate ObjectId format before conversion to prevent NoSQL injection
+      if (!/^[a-f\d]{24}$/i.test(filters.kitchen_id)) {
+        throw new ValidationError('Invalid kitchen_id format');
+      }
       query.kitchen_id = new mongoose.Types.ObjectId(filters.kitchen_id);
     }
 
@@ -236,9 +240,11 @@ export class VendorService {
       vendor_id: vendor._id,
     });
 
-    // Add to vendor's persons array
-    vendor.persons.push(person._id);
-    await vendor.save();
+    // Add to vendor's persons array using atomic operation to prevent race conditions
+    await Vendor.updateOne(
+      { _id: vendor._id },
+      { $push: { persons: person._id } }
+    );
 
     logger.info({
       msg: 'Person added to vendor',

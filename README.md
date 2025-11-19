@@ -18,13 +18,16 @@ PrepChef is a RegTech + marketplace platform that automates vendor compliance tr
 - [Architecture](#-architecture)
 - [Tech Stack](#-tech-stack)
 - [Project Status](#-project-status)
+- [Key Features](#-key-features)
 - [Quick Start](#-quick-start)
 - [API Usage Examples](#-api-usage-examples)
 - [Testing & Development](#-testing--development)
 - [Demo Scenarios](#-demo-scenarios)
 - [Production Deployment](#-production-deployment)
 - [Security Considerations](#-security-considerations)
+- [Documentation](#-documentation)
 - [Roadmap](#-roadmap)
+- [Contributing](#-contributing)
 
 ---
 
@@ -798,6 +801,80 @@ kubectl logs -f deployment/prepchef-worker -n prepchef
 - Structured logging excludes PII by default
 - Document storage separated from metadata
 - Audit trails for compliance
+
+## 📚 Documentation
+
+PrepChef includes comprehensive documentation for developers, operators, and investors:
+
+### For Developers
+
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Complete guide to contributing to PrepChef
+  - Development workflow and setup
+  - Coding standards and conventions
+  - Commit guidelines (Conventional Commits)
+  - Pull request process
+  - Testing guidelines with examples
+
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - System architecture and design
+  - High-level system architecture with diagrams
+  - Domain model relationships (ER diagrams)
+  - API architecture and authentication flows
+  - Background processing and job queues
+  - Data flow diagrams
+  - Security architecture
+  - Scalability patterns and performance targets
+  - Technology stack details
+  - Deployment architecture (Docker + Kubernetes)
+
+- **[OpenAPI Specification](server/swagger.yaml)** - Complete API documentation
+  - All 30+ endpoints documented
+  - Request/response schemas
+  - Authentication methods
+  - Error responses
+  - Interactive API testing
+
+### For Operators
+
+- **[Quick Start Guide](#-quick-start)** - Get up and running in minutes
+  - Docker Compose setup
+  - Environment configuration
+  - Database seeding with demo data
+  - Development server setup
+
+- **[API Usage Examples](#-api-usage-examples)** - Real-world API integration examples
+  - Authentication flows
+  - Vendor management operations
+  - Webhook configuration
+  - HMAC signature verification
+
+- **[Demo Scenarios](#-demo-scenarios)** - Step-by-step walkthroughs
+  - Vendor onboarding and verification
+  - Regulatory update simulation
+  - Multi-jurisdiction compliance
+
+### For Investors & Stakeholders
+
+- **[PROJECT_SUMMARY.md](PROJECT_SUMMARY.md)** - Executive overview
+  - Business value proposition
+  - Technical achievements
+  - Market opportunity
+  - Competitive advantages
+  - Go-to-market strategy
+  - Investment thesis
+  - Financial projections
+  - Team execution milestones
+
+### Additional Resources
+
+- **Test Suite** - Unit tests for critical services
+  - AuthService tests: `server/src/modules/auth/auth.service.test.ts`
+  - VendorService tests: `server/src/modules/vendors/vendor.service.test.ts`
+  - VerificationService tests: `server/src/modules/verification/verification.service.test.ts`
+
+- **CI/CD Pipeline** - Automated testing and deployment
+  - GitHub Actions workflow: `.github/workflows/ci.yml`
+  - Linting, type checking, and testing
+  - Security audits and Docker builds
 
 ## 🗺️ Roadmap
 

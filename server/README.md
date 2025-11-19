@@ -75,11 +75,29 @@ Backend API for PrepChef - Vendor Verification as a Service for shared kitchens.
 
 See `.env.example` for all available configuration options.
 
+### Quick Start with Mock Credentials
+
+The `.env.example` file includes **ready-to-use mock API keys and credentials** for demos and local development. Simply copy it to get started immediately:
+
+```bash
+cp .env.example .env
+```
+
+**Mock credentials included**:
+- ✅ JWT access and refresh secrets (valid 64-char demo values)
+- ✅ Webhook signing secret (valid 64-char demo value)
+- ✅ SendGrid API key (mock value - email disabled by default)
+- ✅ Twilio credentials (mock values - SMS disabled by default)
+- ✅ AWS S3 credentials (mock values - uses local storage by default)
+
+**For production**: Replace all mock values with real credentials. See comments in `.env.example` for guidance.
+
 **Critical variables**:
 - `MONGODB_URI` - MongoDB connection string
 - `REDIS_HOST` / `REDIS_PORT` - Redis connection
 - `JWT_ACCESS_SECRET` - Secret for JWT access tokens (min 32 chars)
 - `JWT_REFRESH_SECRET` - Secret for JWT refresh tokens (min 32 chars)
+- `WEBHOOK_SIGNING_SECRET` - Secret for webhook signature validation (min 32 chars)
 
 ## API Endpoints
 

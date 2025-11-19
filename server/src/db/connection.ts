@@ -129,12 +129,12 @@ function setupEventListeners(): void {
     isConnected = false;
   });
 
-  // Graceful shutdown
-  process.on('SIGINT', async () => {
+  // Graceful shutdown - use process.once to prevent duplicate listeners
+  process.once('SIGINT', async () => {
     await gracefulShutdown('SIGINT');
   });
 
-  process.on('SIGTERM', async () => {
+  process.once('SIGTERM', async () => {
     await gracefulShutdown('SIGTERM');
   });
 }

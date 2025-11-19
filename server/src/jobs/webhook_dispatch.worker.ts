@@ -99,7 +99,14 @@ export function startWebhookDispatchWorker(): void {
   // Graceful shutdown
   process.on('SIGTERM', async () => {
     logger.info('SIGTERM received, closing webhook dispatch worker...');
-    await worker.close();
+    try {
+      await worker.close();
+    } catch (err) {
+      logger.error({
+        msg: 'Error closing webhook dispatch worker',
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
   });
 }
 

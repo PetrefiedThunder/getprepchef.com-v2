@@ -73,7 +73,7 @@ const ContactSchema = new Schema<Contact>(
       required: true,
       lowercase: true,
       validate: {
-        validator: (v: string) => /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/.test(v),
+        validator: (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
       },
     },
     phone: {

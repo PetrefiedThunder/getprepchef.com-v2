@@ -47,25 +47,28 @@ export class RegIntelService {
   ): Promise<IJurisdiction | null> {
     // Try to find most specific jurisdiction first
     if (city && county) {
+      // Use case-insensitive exact match to prevent ReDoS
       const cityJurisdiction = await Jurisdiction.findOne({
         type: 'city',
-        name: new RegExp(`^${city}$`, 'i'),
+        name: { $regex: `^${city.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' },
       });
       if (cityJurisdiction) return cityJurisdiction;
     }
 
     if (county) {
+      // Use case-insensitive match with escaped input to prevent ReDoS
       const countyJurisdiction = await Jurisdiction.findOne({
         type: 'county',
-        name: new RegExp(`^${county}`, 'i'),
+        name: { $regex: `^${county.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, $options: 'i' },
       });
       if (countyJurisdiction) return countyJurisdiction;
     }
 
-    // Fall back to state
+    // Fall back to state - sanitize to only allow A-Z
+    const sanitizedState = state.toUpperCase().replace(/[^A-Z]/g, '');
     const stateJurisdiction = await Jurisdiction.findOne({
       type: 'state',
-      code: { $regex: new RegExp(`^US-${state.toUpperCase()}$`) },
+      code: `US-${sanitizedState}`,
     });
 
     return stateJurisdiction;

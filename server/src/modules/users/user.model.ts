@@ -52,7 +52,7 @@ const UserSchema = new Schema<IUser, IUserModel>(
       trim: true,
       index: true,
       validate: {
-        validator: (v: string) => /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/.test(v),
+        validator: (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
         message: 'Invalid email format',
       },
     },

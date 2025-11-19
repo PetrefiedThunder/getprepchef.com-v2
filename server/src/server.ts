@@ -43,30 +43,30 @@ async function start(): Promise<void> {
       environment: config.NODE_ENV,
     });
 
-    // Graceful shutdown handler
-    const signals = ['SIGINT', 'SIGTERM'];
-    signals.forEach((signal) => {
-      process.on(signal, async () => {
-        logger.info({
-          msg: 'Shutdown signal received',
-          signal,
-        });
-
-        try {
-          logger.info('Closing HTTP server...');
-          await app.close();
-
-          logger.info('Server shutdown complete');
-          process.exit(0);
-        } catch (error) {
-          logger.error({
-            msg: 'Error during shutdown',
-            error: error instanceof Error ? error.message : String(error),
-          });
-          process.exit(1);
-        }
+    // Graceful shutdown handler - use process.once to prevent duplicate listeners
+    const shutdownHandler = async (signal: string) => {
+      logger.info({
+        msg: 'Shutdown signal received',
+        signal,
       });
-    });
+
+      try {
+        logger.info('Closing HTTP server...');
+        await app.close();
+
+        logger.info('Server shutdown complete');
+        process.exit(0);
+      } catch (error) {
+        logger.error({
+          msg: 'Error during shutdown',
+          error: error instanceof Error ? error.message : String(error),
+        });
+        process.exit(1);
+      }
+    };
+
+    process.once('SIGINT', () => shutdownHandler('SIGINT'));
+    process.once('SIGTERM', () => shutdownHandler('SIGTERM'));
   } catch (error) {
     logger.fatal({
       msg: 'Failed to start server',

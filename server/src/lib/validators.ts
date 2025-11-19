@@ -99,11 +99,19 @@ export function isValidObjectId(id: string): boolean {
 }
 
 /**
- * Sanitize user input (basic XSS prevention)
+ * Sanitize user input (XSS prevention via HTML entity encoding)
  */
 export function sanitizeInput(input: string): string {
+  const htmlEntities: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+    '/': '&#x2F;',
+  };
   return input
-    .replace(/[<>]/g, '') // Remove angle brackets
+    .replace(/[&<>"'\/]/g, (char) => htmlEntities[char] || char)
     .trim();
 }
 

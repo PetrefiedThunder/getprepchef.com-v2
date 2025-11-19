@@ -262,7 +262,14 @@ export class WebhookService {
           // In production, this would enqueue a job with delay
           // For now, we'll just wait and retry synchronously
           await new Promise((resolve) => setTimeout(resolve, delay));
-          return this.deliverWebhook(endpoint, payload, eventId, attemptNumber + 1);
+          return await this.deliverWebhook(endpoint, payload, eventId, attemptNumber + 1).catch((err) => {
+            logger.error({
+              msg: 'Webhook retry failed',
+              endpoint_id: endpoint._id.toString(),
+              error: err instanceof Error ? err.message : String(err),
+            });
+            throw err;
+          });
         }
 
         throw new Error(errorMsg);
@@ -293,7 +300,14 @@ export class WebhookService {
         });
 
         await new Promise((resolve) => setTimeout(resolve, delay));
-        return this.deliverWebhook(endpoint, payload, eventId, attemptNumber + 1);
+        return await this.deliverWebhook(endpoint, payload, eventId, attemptNumber + 1).catch((err) => {
+          logger.error({
+            msg: 'Webhook retry after error failed',
+            endpoint_id: endpoint._id.toString(),
+            error: err instanceof Error ? err.message : String(err),
+          });
+          throw err;
+        });
       }
 
       logger.error({

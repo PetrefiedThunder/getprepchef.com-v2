@@ -149,7 +149,14 @@ export function startRegClearinghouseWorker(): void {
   // Graceful shutdown
   process.on('SIGTERM', async () => {
     logger.info('SIGTERM received, closing regulatory clearinghouse worker...');
-    await worker.close();
+    try {
+      await worker.close();
+    } catch (err) {
+      logger.error({
+        msg: 'Error closing regulatory clearinghouse worker',
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
   });
 }
 

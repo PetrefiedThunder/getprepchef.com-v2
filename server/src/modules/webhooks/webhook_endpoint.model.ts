@@ -90,12 +90,44 @@ const WebhookEndpointSchema = new Schema<IWebhookEndpoint, IWebhookEndpointModel
         validator: (v: string) => {
           try {
             const url = new URL(v);
-            return url.protocol === 'https:' || url.protocol === 'http:';
+            // Only allow HTTPS/HTTP protocols
+            if (url.protocol !== 'https:' && url.protocol !== 'http:') {
+              return false;
+            }
+
+            // Block private IP ranges to prevent SSRF
+            const hostname = url.hostname.toLowerCase();
+
+            // Block localhost
+            if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1') {
+              return false;
+            }
+
+            // Block private IPv4 ranges
+            const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/;
+            if (ipv4Regex.test(hostname)) {
+              const parts = hostname.split('.').map(Number);
+              // 10.0.0.0/8
+              if (parts[0] === 10) return false;
+              // 172.16.0.0/12
+              if (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) return false;
+              // 192.168.0.0/16
+              if (parts[0] === 192 && parts[1] === 168) return false;
+              // 169.254.0.0/16 (link-local)
+              if (parts[0] === 169 && parts[1] === 254) return false;
+            }
+
+            // Block private IPv6 ranges (simplified check)
+            if (hostname.includes(':') && (hostname.startsWith('fc') || hostname.startsWith('fd'))) {
+              return false;
+            }
+
+            return true;
           } catch {
             return false;
           }
         },
-        message: 'Invalid URL format',
+        message: 'Invalid URL format or private IP address not allowed',
       },
     },
     secret: {
@@ -258,11 +290,8 @@ WebhookEndpointSchema.set('toJSON', {
   virtuals: true,
   transform: (_doc, ret) => {
     delete ret.__v;
-    // Only show first/last 4 chars of secret for security
-    if (ret.secret) {
-      const secret = ret.secret as string;
-      ret.secret = `${secret.substring(0, 4)}...${secret.substring(secret.length - 4)}`;
-    }
+    // Never expose secret in responses - security risk
+    delete ret.secret;
     return ret;
   },
 });

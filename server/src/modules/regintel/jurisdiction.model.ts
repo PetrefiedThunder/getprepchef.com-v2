@@ -111,10 +111,11 @@ JurisdictionSchema.statics.findByState = async function (
   this: IJurisdictionModel,
   stateCode: string
 ): Promise<IJurisdiction[]> {
-  // First find the state jurisdiction
+  // First find the state jurisdiction - sanitize stateCode to prevent ReDoS
+  const sanitizedStateCode = stateCode.toUpperCase().replace(/[^A-Z]/g, '');
   const state = await this.findOne({
     type: JURISDICTION_TYPE.STATE,
-    code: { $regex: new RegExp(`^US-${stateCode.toUpperCase()}$`) },
+    code: `US-${sanitizedStateCode}`,
   });
 
   if (!state) {
